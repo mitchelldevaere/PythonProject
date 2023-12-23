@@ -1,8 +1,28 @@
 import sqlite3
 import pandas as pd
 
-# Connection to the "opdracht" database
-conn = sqlite3.connect('database.db')
+class DatabaseConnector:
+    def __init__(self, db_file):
+        self.db_file = db_file
+        self.conn = None
+
+    def connect(self):
+        self.conn = sqlite3.connect(self.db_file)
+
+    def execute_query(self, query):
+        if not self.conn:
+            self.connect()
+
+        with self.conn:
+            return pd.read_sql_query(query, self.conn)
+
+    def close_connection(self):
+        if self.conn:
+            self.conn.close()
+            self.conn = None
+
+# Create an instance of DatabaseConnector
+db_connector = DatabaseConnector('database.db')
 
 # SQL query to retrieve the desired data
 query = '''
@@ -16,10 +36,11 @@ query = '''
         orders ON users.id = orders.user_id
 '''
 
-# Retrieve data and place it into a pandas DataFrame
-opdracht_data = pd.read_sql_query(query, conn)
+# Execute the query and retrieve data into a pandas DataFrame
+opdracht_data = db_connector.execute_query(query)
 
-# Close the connection
-conn.close()
+# Close the database connection
+db_connector.close_connection()
 
+# Display the results
 print(opdracht_data)
