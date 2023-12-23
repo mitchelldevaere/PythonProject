@@ -55,7 +55,7 @@ class CommandLineApp:
         return self.db_connector.execute_query(query)
 
     def get_all_orders(self):
-        query = 'SELECT * FROM orders'
+        query = 'SELECT orders.ID AS OrderID, users.Name AS UserName, orders.Product AS Product, orders.Amount AS Amount FROM orders LEFT JOIN users ON orders.user_ID = users.ID'
         return self.db_connector.execute_query(query)
 
 if __name__ == "__main__":
