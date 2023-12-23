@@ -4,35 +4,18 @@ import pandas as pd
 class DatabaseConnector:
     def __init__(self, db_file):
         self.db_file = db_file
-        self.conn = None
-
-    def __enter__(self):
-        self.connect()
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.close_connection()
-
-    def connect(self):
-        self.conn = sqlite3.connect(self.db_file)
 
     def execute_query(self, query, params=None):
-        if not self.conn:
-            self.connect()
+        conn = sqlite3.connect(self.db_file)
 
-        try:
-            if params:
-                return self.conn.execute(query, params)
-            else:
-                return self.conn.execute(query)
-        except Exception as e:
-            print(f"Error executing query: {str(e)}")
-            return None
-
-    def close_connection(self):
-        if self.conn:
-            self.conn.close()
-            self.conn = None
+        if params:
+            result =  pd.read_sql_query(query, conn, params=params)
+            conn.close()
+            return result
+        else:
+            result =  pd.read_sql_query(query, conn)
+            conn.close()
+            return result
 
 class CommandLineApp:
     def __init__(self, db_file):
@@ -48,13 +31,11 @@ class CommandLineApp:
 
     def get_user_info(self, user_id):
         query = 'SELECT * FROM users WHERE id = ?'
-        result = self.db_connector.execute_query(query, (user_id,))
-        return pd.DataFrame(result, columns=['ID', 'Name', 'Age'])
+        return self.db_connector.execute_query(query, (user_id,))
 
     def get_all_users(self):
         query = 'SELECT * FROM users'
-        result = self.db_connector.execute_query(query)
-        return pd.DataFrame(result, columns=['ID', 'Name', 'Age'])
+        return self.db_connector.execute_query(query)
 
     def get_all_orders(self):
         query = '''
@@ -68,8 +49,7 @@ class CommandLineApp:
             LEFT JOIN
                 users ON orders.user_ID = users.ID
         '''
-        result = self.db_connector.execute_query(query)
-        return pd.DataFrame(result, columns=['OrderID', 'UserName', 'Product', 'Amount'])
+        return self.db_connector.execute_query(query)
 
 class ExcelWriter:
     def __init__(self, db_file):
@@ -108,26 +88,28 @@ if __name__ == "__main__":
         elif choice == '3':
             user_id = input("Geef gebruiker ID: ")
             user_info = app.get_user_info(user_id)
-            if user_info:
+            if not user_info.empty:
                 print("Gebruiker info:")
                 print(user_info)
             else:
                 print("Gebruiker niet gevonden.")
 
+
         elif choice == '4':
             all_orders = app.get_all_orders()
-            if all_orders:
+            if not all_orders.empty:
                 print("Alle Orders:")
-                for order in all_orders:
+                for order in all_orders.itertuples(index=False):
                     print(order)
             else:
                 print("Geen orders gevonden.")
 
+
         elif choice == '5':
             all_users = app.get_all_users()
-            if all_users:
+            if not all_users.empty:
                 print("Alle gebruikers:")
-                for user in all_users:
+                for user in all_users.itertuples(index=False):
                     print(user)
 
         elif choice == '6':
