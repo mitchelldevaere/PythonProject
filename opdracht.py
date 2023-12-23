@@ -15,22 +15,18 @@ class DatabaseConnector:
     def connect(self):
         self.conn = sqlite3.connect(self.db_file)
 
-    def execute_query(self, query, params=None):
+    def execute_query(self, query):
         if not self.conn:
             self.connect()
 
         try:
-            with self.conn:
-                if params:
-                    return self.conn.execute(query, params)
-                else:
-                    return self.conn.execute(query)
+            return self.conn.execute(query)
         except Exception as e:
             print(f"Error executing query: {str(e)}")
             return None
 
-    def fetch_all(self, query, params=None):
-        result = self.execute_query(query, params)
+    def fetch_all(self, query):
+        result = self.execute_query(query)
         if result:
             return result.fetchall()
         return None
