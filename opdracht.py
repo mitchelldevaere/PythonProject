@@ -1,4 +1,5 @@
 import sqlite3
+import pandas as pd
 
 class DatabaseConnector:
     def __init__(self, db_file):
@@ -35,7 +36,6 @@ class DatabaseConnector:
 
 class CommandLineApp:
     def __init__(self, db_file):
-        self.db_file = db_file
         self.db_connector = DatabaseConnector(db_file)
 
     def add_user(self, name, age):
@@ -48,22 +48,48 @@ class CommandLineApp:
 
     def get_user_info(self, user_id):
         query = 'SELECT * FROM users WHERE id = ?'
-        return self.db_connector.execute_query(query, (user_id,))
+        result = self.db_connector.execute_query(query, (user_id,))
+        return pd.DataFrame(result, columns=['ID', 'Name', 'Age'])
 
     def get_all_users(self):
         query = 'SELECT * FROM users'
-        return self.db_connector.execute_query(query)
+        result = self.db_connector.execute_query(query)
+        return pd.DataFrame(result, columns=['ID', 'Name', 'Age'])
 
     def get_all_orders(self):
-        query = 'SELECT orders.ID AS OrderID, users.Name AS UserName, orders.Product AS Product, orders.Amount AS Amount FROM orders LEFT JOIN users ON orders.user_ID = users.ID'
-        return self.db_connector.execute_query(query)
+        query = '''
+            SELECT
+                orders.ID AS OrderID,
+                users.Name AS UserName,
+                orders.Product AS Product,
+                orders.Amount AS Amount
+            FROM
+                orders
+            LEFT JOIN
+                users ON orders.user_ID = users.ID
+        '''
+        result = self.db_connector.execute_query(query)
+        return pd.DataFrame(result, columns=['OrderID', 'UserName', 'Product', 'Amount'])
+
+class ExcelWriter:
+    def __init__(self, db_file):
+        self.commandLine = CommandLineApp(db_file)
+
+    def write_to_excel(self):
+        with pd.ExcelWriter('database.xlsx') as writer:
+
+            # Tabblad 1: Alle factuurlijnen
+            self.commandLine.get_all_users().to_excel(writer, sheet_name='Alle_gebruikers', index=False)
+
+            self.commandLine.get_all_orders().to_excel(writer, sheet_name='Alle_Orders', index=False)
 
 if __name__ == "__main__":
     db_file = 'database.db'
     app = CommandLineApp(db_file)
+    writer = ExcelWriter(db_file)
 
     while True:
-        print("\n1. Gebruiker toevoegen\n2. Order plaatsen\n3. Gebruiker info opvragen\n4. Alle orders\n5. Alle gebruikers\n6. Afsluiten")
+        print("\n1. Gebruiker toevoegen\n2. Order plaatsen\n3. Gebruiker info opvragen\n4. Alle orders\n5. Alle gebruikers\n6. Data naar Excel\n7. Afsluiten")
         choice = input("kies welke optie: ")
 
         if choice == '1':
@@ -105,6 +131,10 @@ if __name__ == "__main__":
                     print(user)
 
         elif choice == '6':
+            writer.write_to_excel()
+            print("Alle data wordt geplaatst in Excel.")
+
+        elif choice == '7':
             break
 
         else:
