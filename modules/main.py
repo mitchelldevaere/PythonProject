@@ -2,7 +2,7 @@ from CommandLine import CommandLineApp
 from ExcelWriter import ExcelWriter
 
 if __name__ == "__main__":
-    db_file = 'C:/Users/michi/Desktop/school/jaar 3 bis/python/opdracht/opdracht/PythonProject/database.db'
+    db_file = '../database.db'
     app = CommandLineApp(db_file)
     writer = ExcelWriter(db_file)
 
